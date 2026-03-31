@@ -35,7 +35,7 @@ npm install && npm run build
 
 ### 配置 API
 
-支持两种后端，通过环境变量自动识别：
+支持两种后端，通过环境变量自动识别：（支持自定义base url）
 
 **方式一：Anthropic 格式（推荐）**
 
