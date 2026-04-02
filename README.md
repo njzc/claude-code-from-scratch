@@ -30,7 +30,7 @@
   <video src="https://github.com/user-attachments/assets/4f6597e2-6ea3-45ae-8a6b-77662c4e9540" width="100%" autoplay loop muted playsinline></video>
 </div>
 
-## 分步教程
+## 📖 分步教程
 
 8 章内容，从核心循环到完整 CLI，每章都贴真实代码 + Claude Code 源码对照：
 
@@ -45,7 +45,7 @@
 | [7. CLI 与会话](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/07-cli-session) | REPL、Ctrl+C、会话持久化 | `cli.ts` ↔ `cli.tsx` |
 | [8. 架构对比](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/08-whats-next) | 完整对比 + 扩展方向 | 全局 |
 
-## 快速开始
+## 🚀 快速开始
 
 ```bash
 git clone https://github.com/Windy3f3f3f3f/claude-code-from-scratch.git
@@ -103,7 +103,7 @@ mini-claude                  # 直接启动
 | `/cost` | 显示累计 token 用量和费用估算 |
 | `/compact` | 手动触发对话压缩 |
 
-## 与 Claude Code 的对比
+## ⚖️ 与 Claude Code 的对比
 
 | 维度 | Claude Code | Mini Claude Code |
 |------|------------|-----------------|
@@ -114,7 +114,7 @@ mini-claude                  # 直接启动
 | 安全机制 | 5 层权限系统 | 基本危险命令确认 |
 | 代码量 | 50 万+ 行 | ~1300 行 |
 
-## 核心能力
+## ⚡ 核心能力
 
 - **Agent 循环**：自动调用工具、处理结果、持续迭代，直到任务完成
 - **6 个核心工具**：读文件、写文件、编辑代码、搜索文件、搜索内容、执行命令
@@ -124,7 +124,7 @@ mini-claude                  # 直接启动
 - **会话持久化**：自动保存对话，`--resume` 恢复上次会话
 - **错误恢复**：API 限流/过载时指数退避重试，Ctrl+C 优雅中断
 
-## 项目结构
+## 📁 项目结构
 
 ```
 src/
@@ -137,7 +137,7 @@ src/
                                           总计: ~1300 行
 ```
 
-## 架构图
+## 🏗️ 架构图
 
 ```
 用户输入
@@ -166,15 +166,15 @@ src/
 任务完成 → 自动保存会话
 ```
 
-## 相关项目
+## 🔗 相关项目
 
 - **[how-claude-code-works](https://github.com/Windy3f3f3f3f/how-claude-code-works)** — Claude Code 源码架构深度解析（12 篇专题，33 万字）
 
-## 致谢
+## 🙏 致谢
 
 感谢 [LINUX DO](https://linux.do/) 社区的支持与讨论。
 
-## 更多交流
+## 💬 更多交流
 
 <div align="center">
 
@@ -186,7 +186,7 @@ QQ 群号：**1090526244**
 
 </div>
 
-## Star History
+## 📈 Star History
 
 <div align="center">
 <picture>
@@ -196,6 +196,6 @@ QQ 群号：**1090526244**
 </picture>
 </div>
 
-## License
+## 📄 License
 
 MIT
