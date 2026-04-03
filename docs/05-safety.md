@@ -207,9 +207,18 @@ export function checkPermission(
   // 读工具在所有模式下都安全
   if (READ_TOOLS.has(toolName)) return { action: "allow" };
 
-  // plan 模式: 阻止所有编辑工具（不只靠 prompt，权限层也强制执行）
-  if (mode === "plan" && EDIT_TOOLS.has(toolName)) {
-    return { action: "deny", message: `Blocked in plan mode: ${toolName}` };
+  // plan 模式: 阻止所有编辑工具（plan 文件除外）+ shell 命令
+  if (mode === "plan") {
+    if (EDIT_TOOLS.has(toolName)) {
+      const filePath = input.file_path || input.path;
+      if (planFilePath && filePath === planFilePath) {
+        return { action: "allow" }; // plan 文件是唯一可写的
+      }
+      return { action: "deny", message: `Blocked in plan mode: ${toolName}` };
+    }
+    if (toolName === "run_shell") {
+      return { action: "deny", message: "Shell commands blocked in plan mode" };
+    }
   }
 
   // acceptEdits: 文件编辑自动放行
@@ -235,7 +244,7 @@ mini-claude --accept-edits "..."   # acceptEdits: 自动批准编辑
 mini-claude --dont-ask "..."       # dontAsk: CI 模式
 ```
 
-**`plan` 模式的额外行为**：除了权限限制，还会在 system prompt 中注入提示 "You are in PLAN mode. Describe what changes you would make, but do NOT execute any write operations."
+**`plan` 模式的动态切换**：除了 `--plan` CLI flag，模型还可以在对话中通过 `enter_plan_mode` / `exit_plan_mode` 工具动态切换。进入 plan mode 时，系统会生成一个 plan 文件路径（`~/.claude/plans/plan-<sessionId>.md`），这是 plan mode 中唯一可写的文件。退出时恢复之前的权限模式。系统提示中会注入结构化的工作流指引（Explore → Design → Write Plan → Exit），与 Claude Code 官方实现对齐。
 
 **`dontAsk` 的设计意义**：在 CI/CD 管道中运行时，没有用户来回答确认问题。`dontAsk` 让任何需要确认的操作直接失败，agent 看到 denied 后会调整策略（比如用更安全的方式完成任务）。
 

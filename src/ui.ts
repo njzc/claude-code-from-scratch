@@ -6,7 +6,7 @@ export function printWelcome() {
       chalk.gray(" — A minimal coding agent\n")
   );
   console.log(chalk.gray("  Type your request, or 'exit' to quit."));
-  console.log(chalk.gray("  Commands: /clear /cost /compact /memory /skills\n"));
+  console.log(chalk.gray("  Commands: /clear /plan /cost /compact /memory /skills\n"));
 }
 
 export function printUserPrompt() {

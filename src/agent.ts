@@ -22,6 +22,9 @@ import { buildSystemPrompt } from "./prompt.js";
 import { getSubAgentConfig, type SubAgentType } from "./subagent.js";
 import * as readline from "readline";
 import { randomUUID } from "crypto";
+import { existsSync, readFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
 
 // ─── Retry with exponential backoff ──────────────────────────
 
@@ -166,6 +169,11 @@ export class Agent {
   // Permission whitelist: paths confirmed in this session
   private confirmedPaths: Set<string> = new Set();
 
+  // Plan mode state
+  private prePlanMode: PermissionMode | null = null;
+  private planFilePath: string | null = null;
+  private baseSystemPrompt: string = "";
+
   // External confirmation callback (avoids creating a second readline on stdin)
   private confirmFn?: (message: string) => Promise<boolean>;
 
@@ -194,11 +202,13 @@ export class Agent {
     this.sessionStartTime = new Date().toISOString();
 
     // Build system prompt (with plan mode injection if needed)
-    let sysPrompt = options.customSystemPrompt || buildSystemPrompt();
+    this.baseSystemPrompt = options.customSystemPrompt || buildSystemPrompt();
     if (this.permissionMode === "plan") {
-      sysPrompt += "\n\n# Plan Mode Active\nYou are in PLAN mode. Describe what changes you would make, but do NOT execute any write operations (write_file, edit_file, or destructive shell commands). Only use read-only tools to analyze the codebase.";
+      this.planFilePath = this.generatePlanFilePath();
+      this.systemPrompt = this.baseSystemPrompt + this.buildPlanModePrompt();
+    } else {
+      this.systemPrompt = this.baseSystemPrompt;
     }
-    this.systemPrompt = sysPrompt;
 
     if (this.useOpenAI) {
       this.openaiClient = new OpenAI({
@@ -231,6 +241,37 @@ export class Agent {
 
   setConfirmFn(fn: (message: string) => Promise<boolean>) {
     this.confirmFn = fn;
+  }
+
+  /** Toggle plan mode from the REPL. Returns the new mode description. */
+  togglePlanMode(): string {
+    if (this.permissionMode === "plan") {
+      // Exit plan mode
+      this.permissionMode = this.prePlanMode || "default";
+      this.prePlanMode = null;
+      this.planFilePath = null;
+      this.systemPrompt = this.baseSystemPrompt;
+      if (this.useOpenAI && this.openaiMessages.length > 0) {
+        (this.openaiMessages[0] as any).content = this.systemPrompt;
+      }
+      printInfo(`Exited plan mode → ${this.permissionMode} mode`);
+      return this.permissionMode;
+    } else {
+      // Enter plan mode
+      this.prePlanMode = this.permissionMode;
+      this.permissionMode = "plan";
+      this.planFilePath = this.generatePlanFilePath();
+      this.systemPrompt = this.baseSystemPrompt + this.buildPlanModePrompt();
+      if (this.useOpenAI && this.openaiMessages.length > 0) {
+        (this.openaiMessages[0] as any).content = this.systemPrompt;
+      }
+      printInfo(`Entered plan mode. Plan file: ${this.planFilePath}`);
+      return "plan";
+    }
+  }
+
+  getPermissionMode(): string {
+    return this.permissionMode;
   }
 
   getTokenUsage() {
@@ -621,6 +662,7 @@ export class Agent {
     name: string,
     input: Record<string, any>
   ): Promise<string> {
+    if (name === "enter_plan_mode" || name === "exit_plan_mode") return this.executePlanModeTool(name);
     if (name === "agent") return this.executeAgentTool(input);
     if (name === "skill") return this.executeSkillTool(input);
     return executeTool(name, input);
@@ -646,7 +688,7 @@ export class Agent {
         customSystemPrompt: result.prompt,
         customTools: tools,
         isSubAgent: true,
-        permissionMode: "bypassPermissions",
+        permissionMode: this.permissionMode === "plan" ? "plan" : "bypassPermissions",
       });
 
       try {
@@ -663,6 +705,76 @@ export class Agent {
 
     // Inline mode: return prompt for injection into conversation
     return `[Skill "${input.skill_name}" activated]\n\n${result.prompt}`;
+  }
+
+  // ─── Plan mode helpers ──────────────────────────────────────
+
+  private generatePlanFilePath(): string {
+    const dir = join(homedir(), ".claude", "plans");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    return join(dir, `plan-${this.sessionId}.md`);
+  }
+
+  private buildPlanModePrompt(): string {
+    return `
+
+# Plan Mode Active
+
+Plan mode is active. You MUST NOT make any edits (except the plan file below), run non-readonly tools, or make any changes to the system.
+
+## Plan File: ${this.planFilePath}
+Write your plan incrementally to this file using write_file or edit_file. This is the ONLY file you are allowed to edit.
+
+## Workflow
+1. **Explore**: Read code to understand the task. Use read_file, list_files, grep_search.
+2. **Design**: Design your implementation approach. Use the agent tool with type="plan" if the task is complex.
+3. **Write Plan**: Write a structured plan to the plan file including:
+   - **Context**: Why this change is needed
+   - **Steps**: Implementation steps with critical file paths
+   - **Verification**: How to test the changes
+4. **Exit**: Call exit_plan_mode when your plan is ready for user review.
+
+IMPORTANT: When your plan is complete, you MUST call exit_plan_mode. Do NOT ask the user to approve — exit_plan_mode handles that.`;
+  }
+
+  private executePlanModeTool(name: string): string {
+    if (name === "enter_plan_mode") {
+      if (this.permissionMode === "plan") {
+        return "Already in plan mode.";
+      }
+      this.prePlanMode = this.permissionMode;
+      this.permissionMode = "plan";
+      this.planFilePath = this.generatePlanFilePath();
+      this.systemPrompt = this.baseSystemPrompt + this.buildPlanModePrompt();
+      if (this.useOpenAI && this.openaiMessages.length > 0) {
+        (this.openaiMessages[0] as any).content = this.systemPrompt;
+      }
+      printInfo("Entered plan mode (read-only). Plan file: " + this.planFilePath);
+      return `Entered plan mode. You are now in read-only mode.\n\nYour plan file: ${this.planFilePath}\nWrite your plan to this file. This is the only file you can edit.\n\nWhen your plan is complete, call exit_plan_mode.`;
+    }
+
+    if (name === "exit_plan_mode") {
+      if (this.permissionMode !== "plan") {
+        return "Not in plan mode.";
+      }
+      // Read plan file content
+      let planContent = "(No plan file found)";
+      if (this.planFilePath && existsSync(this.planFilePath)) {
+        planContent = readFileSync(this.planFilePath, "utf-8");
+      }
+      // Restore previous mode
+      this.permissionMode = this.prePlanMode || "default";
+      this.prePlanMode = null;
+      this.planFilePath = null;
+      this.systemPrompt = this.baseSystemPrompt;
+      if (this.useOpenAI && this.openaiMessages.length > 0) {
+        (this.openaiMessages[0] as any).content = this.systemPrompt;
+      }
+      printInfo("Exited plan mode. Restored to " + this.permissionMode + " mode.");
+      return `Exited plan mode. Permission mode restored to: ${this.permissionMode}\n\n## Your Plan:\n${planContent}`;
+    }
+
+    return `Unknown plan mode tool: ${name}`;
   }
 
   private async executeAgentTool(input: Record<string, any>): Promise<string> {
@@ -682,7 +794,7 @@ export class Agent {
       customSystemPrompt: config.systemPrompt,
       customTools: config.tools,
       isSubAgent: true,
-      permissionMode: "bypassPermissions", // Sub-agents don't need confirmation
+      permissionMode: this.permissionMode === "plan" ? "plan" : "bypassPermissions",
     });
 
     try {
@@ -753,7 +865,7 @@ export class Agent {
         printToolCall(toolUse.name, input);
 
         // Permission check (mode-aware)
-        const perm = checkPermission(toolUse.name, input, this.permissionMode);
+        const perm = checkPermission(toolUse.name, input, this.permissionMode, this.planFilePath || undefined);
         if (perm.action === "deny") {
           printInfo(`Denied: ${perm.message}`);
           toolResults.push({
@@ -909,7 +1021,7 @@ export class Agent {
         printToolCall(fnName, input);
 
         // Permission check (mode-aware)
-        const perm = checkPermission(fnName, input, this.permissionMode);
+        const perm = checkPermission(fnName, input, this.permissionMode, this.planFilePath || undefined);
         if (perm.action === "deny") {
           printInfo(`Denied: ${perm.message}`);
           this.openaiMessages.push({

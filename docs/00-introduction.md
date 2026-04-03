@@ -103,7 +103,7 @@ npm start
   Mini Claude Code — A minimal coding agent
 
   Type your request, or 'exit' to quit.
-  Commands: /clear /cost /compact /memory /skills
+  Commands: /clear /cost /compact /memory /skills /plan
 
 >
 ```

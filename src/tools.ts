@@ -164,6 +164,25 @@ export const toolDefinitions: ToolDef[] = [
       required: ["skill_name"],
     },
   },
+  // ─── Plan mode tools ────────────────────────────────────────
+  {
+    name: "enter_plan_mode",
+    description:
+      "Enter plan mode to switch to a read-only planning phase. In plan mode, you can only read files and write to the plan file. Use this when you need to explore the codebase and design an implementation plan before making changes.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
+  {
+    name: "exit_plan_mode",
+    description:
+      "Exit plan mode after you have finished writing your plan to the plan file. The user will review and approve the plan before you proceed with implementation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
   // ─── Agent tool ─────────────────────────────────────────────
   {
     name: "agent",
@@ -543,7 +562,8 @@ function checkPermissionRules(
 export function checkPermission(
   toolName: string,
   input: Record<string, any>,
-  mode: PermissionMode = "default"
+  mode: PermissionMode = "default",
+  planFilePath?: string
 ): { action: "allow" | "deny" | "confirm"; message?: string } {
   // bypassPermissions (--yolo): allow everything
   if (mode === "bypassPermissions") return { action: "allow" };
@@ -561,9 +581,23 @@ export function checkPermission(
   // Read tools are always allowed in all modes
   if (READ_TOOLS.has(toolName)) return { action: "allow" };
 
-  // plan mode: block all write/edit tools (prompt alone is not enough)
-  if (mode === "plan" && EDIT_TOOLS.has(toolName)) {
-    return { action: "deny", message: `Blocked in plan mode: ${toolName}` };
+  // plan mode: block all write/edit tools (except plan file) and shell
+  if (mode === "plan") {
+    if (EDIT_TOOLS.has(toolName)) {
+      const filePath = input.file_path || input.path;
+      if (planFilePath && filePath === planFilePath) {
+        return { action: "allow" };
+      }
+      return { action: "deny", message: `Blocked in plan mode: ${toolName}` };
+    }
+    if (toolName === "run_shell") {
+      return { action: "deny", message: "Shell commands blocked in plan mode" };
+    }
+  }
+
+  // plan mode tools: always allow (handled in agent.ts)
+  if (toolName === "enter_plan_mode" || toolName === "exit_plan_mode") {
+    return { action: "allow" };
   }
 
   // acceptEdits: auto-approve file writes/edits

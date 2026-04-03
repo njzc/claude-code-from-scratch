@@ -2,7 +2,7 @@
 
 ## 本章目标
 
-定义 6 个核心工具（读文件、写文件、编辑文件、列文件、搜索、Shell），让 LLM 能真正操作你的代码库。
+定义 6 个核心工具（读文件、写文件、编辑文件、列文件、搜索、Shell）+ 4 个扩展工具（skill、agent、enter_plan_mode、exit_plan_mode），让 LLM 能真正操作你的代码库。
 
 ```mermaid
 graph LR
@@ -13,12 +13,20 @@ graph LR
     Dispatch --> LF[list_files]
     Dispatch --> GS[grep_search]
     Dispatch --> RS[run_shell]
+    Dispatch --> SK[skill]
+    Dispatch --> AG[agent]
+    Dispatch --> EP[enter_plan_mode]
+    Dispatch --> XP[exit_plan_mode]
     RF --> Result[工具结果字符串]
     WF --> Result
     EF --> Result
     LF --> Result
     GS --> Result
     RS --> Result
+    SK --> Result
+    AG --> Result
+    EP --> Result
+    XP --> Result
 
     style Dispatch fill:#7c5cfc,color:#fff
     style EF fill:#e8e0ff
@@ -347,7 +355,7 @@ function truncateResult(result: string): string {
 
 | 维度 | Claude Code | mini-claude |
 |------|------------|-------------|
-| **工具数量** | 66+ | 8（6 核心 + skill + agent） |
+| **工具数量** | 66+ | 10（6 核心 + skill + agent + 2 plan mode） |
 | **工具定义** | 每个是一个 class，有 4 个方法 | 静态 JSON schema 数组 |
 | **工具分发** | 注册表 + 依赖注入 | switch 语句 |
 | **执行模式** | StreamingToolExecutor 并发 | 串行 for 循环 |

@@ -72,6 +72,7 @@ Options:
 
 REPL commands:
   /clear              Clear conversation history
+  /plan               Toggle plan mode (read-only ↔ normal)
   /cost               Show token usage and cost
   /compact            Manually compact conversation
   /memory             List saved memories
@@ -163,6 +164,11 @@ async function runRepl(agent: Agent) {
       // REPL commands
       if (input === "/clear") {
         agent.clearHistory();
+        askQuestion();
+        return;
+      }
+      if (input === "/plan") {
+        const newMode = agent.togglePlanMode();
         askQuestion();
         return;
       }

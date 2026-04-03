@@ -15,6 +15,7 @@ graph TB
     Cmd -->|/clear| Clear[清空历史]
     Cmd -->|/cost| Cost[显示费用]
     Cmd -->|/compact| Compact[压缩上下文]
+    Cmd -->|/plan| Plan[切换 plan mode]
     Cmd -->|普通文本| Chat[agent.chat]
     Chat --> Save[自动保存会话]
 
@@ -205,6 +206,10 @@ async function runRepl(agent: Agent) {
       }
       if (input === "/memory") { /* 列出所有记忆 */ askQuestion(); return; }
       if (input === "/skills") { /* 列出可用技能 */ askQuestion(); return; }
+      if (input === "/plan") {
+        const mode = agent.togglePlanMode();
+        askQuestion(); return;
+      }
       if (input.startsWith("/")) {
         // 技能调用：/<skill-name> [args]
         // inline 模式 → 注入 prompt；fork 模式 → 启动子 Agent
@@ -392,7 +397,7 @@ export function printToolResult(name: string, result: string) {
 | **会话格式** | JSONL（流式追加） | JSON（整体写入） |
 | **会话存储** | `~/.claude/projects/` | `~/.mini-claude/sessions/` |
 | **Ctrl+C** | 单按中断 / 双按退出 | 相同逻辑 |
-| **命令系统** | 丰富的 /command | /clear /cost /compact /memory /skills /<skill> |
+| **命令系统** | 丰富的 /command | /clear /cost /compact /memory /skills /plan /<skill> |
 | **代码量** | ~3000 行（入口 + UI） | ~586 行（cli.ts + ui.ts + session.ts） |
 
 ---
