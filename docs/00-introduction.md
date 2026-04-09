@@ -116,7 +116,7 @@ graph TB
 
 ## 技术栈
 
-TypeScript + Python 双语言实现，选你熟悉的看就行。
+TypeScript 和 Python 两个版本分别实现，选你熟悉的看就行。
 
 <!-- tabs:start -->
 #### **TypeScript**

@@ -27,7 +27,7 @@
 
 **Claude Code 开源了 50 万行 TypeScript。读不动？**
 
-本项目用 **~4300 行代码**（TypeScript + Python 双语言实现）复现了 Claude Code 的核心架构——Agent Loop、13 个工具（含并行执行 + 流式早期启动）、4 层上下文压缩、语义记忆召回、技能系统、多 Agent、MCP 集成……每一步都对照真实源码讲解"它怎么做的 → 我们怎么简化的"。
+本项目用 **~4300 行代码**（TypeScript 和 Python 两个版本分别实现）复现了 Claude Code 的核心架构——Agent Loop、13 个工具（含并行执行 + 流式早期启动）、4 层上下文压缩、语义记忆召回、技能系统、多 Agent、MCP 集成……每一步都对照真实源码讲解"它怎么做的 → 我们怎么简化的"。
 
 这不是 demo，是一份**分步教程**——13 章内容，跟着动手写几千行代码，快速理解 Claude Code 这样最好用的 coding agent 的精髓。读完你就理解了 coding agent 的工作原理，无需啃那几十万行代码。
 
@@ -160,6 +160,8 @@ mini-claude-py               # 直接启动
 | `/memory` | 列出所有已保存的记忆 |
 | `/skills` | 列出可用的技能 |
 | `/<skill>` | 调用已注册的技能（如 `/commit`） |
+
+> 详见 [CLI 与会话](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/04-cli-session) 和 [功能测试](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/14-testing)
 
 ## ⚖️ 与 Claude Code 的对比
 

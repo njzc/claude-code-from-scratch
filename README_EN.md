@@ -139,6 +139,8 @@ mini-claude-py               # Launch directly
 | `/skills` | List available skills |
 | `/<skill>` | Invoke a registered skill (e.g. `/commit`) |
 
+> See [CLI & Sessions](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/04-cli-session) and [Testing](https://windy3f3f3f3f.github.io/claude-code-from-scratch/#/docs/14-testing)
+
 ## Comparison with Claude Code
 
 | Aspect | Claude Code | Mini Claude Code |
